@@ -1,0 +1,8 @@
+#!/bin/sh
+# Formatea con Prettier solo los archivos que van en el commit
+FILES=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$FILES" ] && exit 0
+
+echo "Formateando con Prettier..."
+echo "$FILES" | xargs npx prettier --write --ignore-unknown || exit 1
+echo "$FILES" | xargs git add
