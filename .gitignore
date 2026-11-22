@@ -1,0 +1,10 @@
+node_modules/
+coverage/
+dist/
+.env
+.idea/
+*.log
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
