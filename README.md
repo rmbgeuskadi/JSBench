@@ -14,125 +14,78 @@ Forma parte de la aplicación común: un frontend que compara el rendimiento de 
 - [ ] Docker
 - [ ] Pipeline CI/CD
 
+## Contrato de la API (v1)
+
+Basado en el ejemplo de la guía del proyecto (apartado 3.4). Se ajustará si los equipos acuerdan cambios.
+
+### `POST /api/v1/benchmark`
+
+**Petición**
+
+| Campo       | Tipo    | Descripción                                                                                 |
+| ----------- | ------- | ------------------------------------------------------------------------------------------- |
+| `algorithm` | string  | `mergesort` \| `quicksort` \| `insertionsort` \| `selectionsort` \| `fibonacci` \| `matmul` |
+| `size`      | integer | Tamaño de la entrada (> 0)                                                                  |
+
+```json
+{ "algorithm": "mergesort", "size": 10000 }
+```
+
+**Respuesta 200 OK**
+
+| Campo       | Tipo    | Descripción                                  |
+| ----------- | ------- | -------------------------------------------- |
+| `language`  | string  | Siempre `"javascript"`                       |
+| `algorithm` | string  | Algoritmo ejecutado                          |
+| `size`      | integer | Tamaño de la entrada                         |
+| `timeMs`    | number  | Mediana de las 5 mediciones, en milisegundos |
+| `runs`      | integer | Número de mediciones (siempre 5)             |
+
+```json
+{
+  "language": "javascript",
+  "algorithm": "mergesort",
+  "size": 10000,
+  "timeMs": 12.34,
+  "runs": 5
+}
+```
+
+**Errores**: cuerpo `{ "error": string }`
+
+| Código | Cuándo                            |
+| ------ | --------------------------------- |
+| 400    | Petición no válida                |
+| 501    | Algoritmo no implementado todavía |
+
+### `GET /api/v1/algorithms`
+
+Devuelve los algoritmos implementados en este microservicio.
+
+```json
+{ "algorithms": ["mergesort"] }
+```
+
 ## Requisitos
 
-| Herramienta | Versión              |
-| ----------- | -------------------- |
-| Git         | 2.40 o superior      |
-| Node.js     | 24 LTS o superior    |
-| npm         | Incluido con Node.js |
-| VS Code     | Recomendado          |
+| Herramienta | Versión                       |
+| ----------- | ----------------------------- |
+| Node.js     | 24 LTS o superior             |
+| npm         | Incluido con Node.js          |
+| Docker      | Opcional, para usar la imagen |
 
-## Puesta en marcha (primera vez)
+## Ejecución en local
 
-### 1. Configura tu identidad de Git
+> Pendiente: se completará cuando esté implementada la API.
 
-Tus commits deben estar identificados con **tu nombre** y el **correo electrónico** asociado a tu cuenta de GitHub:
+## Tests
 
-```bash
-git config --global user.name "Nombre Apellido"
-git config --global user.email "tu@email.com"
-git config --global pull.ff only
-git config --global core.autocrlf false
-```
+> Pendiente: se completará cuando estén implementados los tests.
 
-### 2. Clona el repositorio
+## Docker y despliegue
 
-```bash
-git clone https://github.com/rmbgeuskadi/JSBench.git
-cd JSBench
-```
+> Pendiente: se completará cuando estén el `Dockerfile` y el pipeline de CD.
 
-### 3. Instala las dependencias
+## Contribuir
 
-```bash
-npm install
-```
-
-Este comando también **activa automáticamente los hooks de Git** (script `prepare`). Para comprobarlo:
-
-```bash
-git config core.hooksPath
-# debe mostrar: .githooks
-```
-
-Si no muestra nada, ejecuta `npm run prepare`.
-
-### 4. Abre el proyecto en VS Code
-
-```bash
-code .
-```
-
-VS Code te sugerirá instalar las extensiones recomendadas (EditorConfig, Prettier y GitHub Pull Requests). **Instálalas.** Con ellas, el código se formatea al guardar.
-
-## Formato del código
-
-Usamos **Prettier**. Hay dos niveles de protección:
-
-1. **Al guardar** en VS Code (`formatOnSave`).
-2. **Al hacer commit**: el hook `.githooks/pre-commit` formatea los archivos que van en el commit.
-
-Comandos manuales:
-
-```bash
-npm run format        # formatea todo el proyecto
-npm run format:check  # solo comprueba (lo que usará el CI)
-```
-
-> El hook se puede saltar con `--no-verify`, pero **no lo hagas**: el CI rechazará el PR si el formato no es correcto.
-
-## Flujo de trabajo
-
-- **No se hace push directo a `main`.** Todo cambio entra por Pull Request.
-- Cada PR necesita al menos **1 aprobación** de un miembro del equipo y el **CI en verde**.
-
-```bash
-git switch main
-git pull
-git switch -c feat/descripcion-corta
-# ... cambios ...
-git add .
-git commit -m "feat(api): descripción en imperativo"
-git push -u origin feat/descripcion-corta
-# Abre el PR en GitHub o desde VS Code (extensión GitHub Pull Requests)
-```
-
-### Convención de commits
-
-Usamos [Conventional Commits](https://www.conventionalcommits.org/es/): `tipo(ámbito): descripción`
-
-| Tipo       | Uso                                         |
-| ---------- | ------------------------------------------- |
-| `feat`     | Funcionalidad nueva                         |
-| `fix`      | Corrección de un error                      |
-| `test`     | Tests                                       |
-| `docs`     | Documentación                               |
-| `refactor` | Reestructuración sin cambiar comportamiento |
-| `chore`    | Mantenimiento, configuración, dependencias  |
-| `ci`       | Pipelines                                   |
-
-### Uso de IA
-
-Está permitido utilizar herramientas de IA como apoyo al desarrollo, pero todo contenido generado debe ser **revisado**, **comprendido** y **validado por una persona**.
-
-Los cambios realizados con ayuda de IA deben documentarse según las normas de trabajo acordadas por el equipo. Los commits deben ser realizados siempre por una persona.
-
-## Estructura
-
-```text
-JSBench/
-├── .githooks/        # hooks de Git versionados
-│   └── pre-commit
-├── .vscode/          # configuración compartida del editor
-│   ├── settings.json
-│   └── extensions.json
-├── .editorconfig
-├── .gitattributes
-├── .gitignore
-├── .prettierrc
-├── .prettierignore
-├── package.json
-├── package-lock.json
-└── README.md
-```
+¿Quieres colaborar? Consulta la [guía de contribución](CONTRIBUTING.md): configuración del entorno, flujo de trabajo, convenciones y revisión de PRs.
