@@ -1,0 +1,16 @@
+@baseUrl = http://localhost:3000
+
+### Comprobar el estado del servicio
+GET {{baseUrl}}/health
+
+### Consultar los algoritmos disponibles
+GET {{baseUrl}}/api/v1/algorithms
+
+### Ejecutar MergeSort con 10 000 elementos
+POST {{baseUrl}}/api/v1/benchmark
+Content-Type: application/json
+
+{
+  "algorithm": "mergesort",
+  "size": 10000
+}

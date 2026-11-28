@@ -65,7 +65,7 @@ Si no muestra nada, ejecuta `npm run prepare`.
 code .
 ```
 
-VS Code te sugerirá instalar las extensiones recomendadas (EditorConfig, Prettier y GitHub Pull Requests). **Instálalas.** Con ellas, el código se formatea al guardar.
+VS Code te sugerirá instalar las extensiones recomendadas (EditorConfig, Prettier, GitHub Pull Requests y REST Client). **Instálalas.** Prettier formatea el código al guardar y REST Client permite probar la API desde el editor.
 
 ## 2. Elegir qué hacer
 
@@ -134,9 +134,8 @@ Comprueba en local lo mismo que comprobará el CI:
 
 ```bash
 npm run format:check   # formato
+npm test               # tests
 ```
-
-> Pendiente: se añadirán los comandos de tests cuando estén implementados.
 
 ## 6. Cómo añadir un algoritmo
 
@@ -153,11 +152,28 @@ npm run format:check   # formato
 
 ```text
 JSBench/
+├── .github/
+│   ├── workflows/
+│   │   └── ci.yml    # pipeline de integración continua
+│   └── ...           # plantillas de issues/PR y CODEOWNERS
 ├── .githooks/        # hooks de Git versionados
 │   └── pre-commit
 ├── .vscode/          # configuración compartida del editor
 │   ├── settings.json
 │   └── extensions.json
+├── src/
+│   ├── algorithms/
+│   ├── controllers/
+│   ├── errors/
+│   ├── routes/
+│   ├── services/
+│   ├── app.js
+│   └── server.js
+├── test/
+│   ├── algorithms/
+│   ├── services/
+│   └── api.test.js
+├── api.http          # peticiones de ejemplo para REST Client
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
