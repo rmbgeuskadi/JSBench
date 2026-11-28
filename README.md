@@ -15,62 +15,7 @@ Forma parte de la aplicación común: un frontend que compara el rendimiento de 
 - [x] Tests unitarios e integración iniciales
 - [x] Pipeline de CI
 - [x] Docker
-- [ ] Pipeline de CD
-
-## Contrato de la API (v1)
-
-Basado en el ejemplo de la guía del proyecto (apartado 3.4). Se ajustará si los equipos acuerdan cambios.
-
-### `POST /api/v1/benchmark`
-
-**Petición**
-
-| Campo       | Tipo    | Descripción                                                                                 |
-| ----------- | ------- | ------------------------------------------------------------------------------------------- |
-| `algorithm` | string  | `mergesort` \| `quicksort` \| `insertionsort` \| `selectionsort` \| `fibonacci` \| `matmul` |
-| `size`      | integer | Tamaño de la entrada (entero entre 1 y 1 000 000)                                           |
-
-Por ahora solo está implementado `mergesort`.
-
-```json
-{ "algorithm": "mergesort", "size": 10000 }
-```
-
-**Respuesta 200 OK**
-
-| Campo       | Tipo    | Descripción                                  |
-| ----------- | ------- | -------------------------------------------- |
-| `language`  | string  | Siempre `"javascript"`                       |
-| `algorithm` | string  | Algoritmo ejecutado                          |
-| `size`      | integer | Tamaño de la entrada                         |
-| `timeMs`    | number  | Mediana de las 5 mediciones, en milisegundos |
-| `runs`      | integer | Número de mediciones (siempre 5)             |
-
-```json
-{
-  "language": "javascript",
-  "algorithm": "mergesort",
-  "size": 10000,
-  "timeMs": 12.34,
-  "runs": 5
-}
-```
-
-**Errores**: cuerpo `{ "error": { "code": string, "message": string } }`
-
-| Código | Cuándo                                                   |
-| ------ | -------------------------------------------------------- |
-| 400    | `algorithm` ausente, `size` no válido o JSON mal formado |
-| 404    | Algoritmo no implementado todavía                        |
-| 413    | Cuerpo de la petición demasiado grande                   |
-
-### `GET /api/v1/algorithms`
-
-Devuelve los algoritmos implementados en este microservicio.
-
-```json
-{ "algorithms": ["mergesort"] }
-```
+- [x] Pipeline CI/CD
 
 ## Requisitos
 
@@ -172,6 +117,64 @@ npm test
 ## Docker
 
 La imagen se construye a partir del `Dockerfile` de la raíz (Node 24, solo dependencias de producción, usuario sin privilegios y healthcheck sobre `/health`).
+
+## CI/CD
+
+Utilizamos **GitHub Actions** para automatizar la integración continua (CI) y la publicación de imágenes Docker (CD).
+
+Los workflows se encuentran en `.github/workflows/`:
+
+- `ci.yml`: integración continua del proyecto.
+- `release.yml`: construcción y publicación de la imagen Docker en
+  GitHub Container Registry (GHCR).
+
+### Publicación de imágenes Docker
+
+El workflow `release.yml` se ejecuta automáticamente cuando:
+
+- Se incorporan cambios a la rama `main`.
+- Se publica una etiqueta de versión con el formato `vX.Y.Z`.
+
+La imagen Docker se construye a partir del `Dockerfile` de la raíz y se publica en `ghcr.io/rmbgeuskadi/jsbench`.
+
+Se generan automáticamente las siguientes etiquetas:
+
+| Etiqueta       | Descripción                                   |
+| -------------- | --------------------------------------------- |
+| `latest`       | Última imagen publicada desde `main`          |
+| `sha-<commit>` | Identificador del commit asociado a la imagen |
+| `X.Y.Z`        | Versión completa                              |
+| `X.Y`          | Versión mayor y menor                         |
+| `X`            | Versión mayor                                 |
+
+### Publicar una nueva versión
+
+Para publicar una versión siguiendo el versionado semántico:
+
+```bash
+git switch main
+git pull
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+GitHub Actions construirá y publicará automáticamente la imagen con las etiquetas correspondientes.
+
+### Ejecutar una imagen publicada
+
+```bash
+docker pull ghcr.io/rmbgeuskadi/jsbench:latest
+docker run --rm --name jsbench -p 3000:3000 ghcr.io/rmbgeuskadi/jsbench:latest
+```
+
+De esta forma, no es necesario construir la imagen Docker localmente.
+
+## API y desarrollo local
+
+La aplicación sigue el flujo `ruta → controlador → servicio → algoritmo`.
+`src/app.js` configura Express, rutas y errores; `src/server.js` inicia el
+servidor. Los controladores traducen HTTP, el servicio valida y mide la
+ejecución, y los algoritmos se mantienen independientes de la API.
 
 ### Construir la imagen
 
