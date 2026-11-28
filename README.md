@@ -9,8 +9,8 @@ Forma parte de la aplicación común: un frontend que compara el rendimiento de 
 ## Estado
 
 - [x] Repositorio y configuración base
-- [ ] API REST con MergeSort
-- [ ] Tests unitarios e integración
+- [x] API REST inicial con MergeSort
+- [x] Tests unitarios e integración iniciales
 - [ ] Docker
 - [ ] Pipeline CI/CD
 
@@ -64,7 +64,10 @@ Si no muestra nada, ejecuta `npm run prepare`.
 code .
 ```
 
-VS Code te sugerirá instalar las extensiones recomendadas (EditorConfig, Prettier y GitHub Pull Requests). **Instálalas.** Con ellas, el código se formatea al guardar.
+VS Code te sugerirá instalar las extensiones recomendadas (EditorConfig,
+Prettier, GitHub Pull Requests y REST Client). **Instálalas.** Prettier permite
+formatear el código al guardar y REST Client permite probar la API desde el
+editor.
 
 ## Formato del código
 
@@ -77,10 +80,64 @@ Comandos manuales:
 
 ```bash
 npm run format        # formatea todo el proyecto
-npm run format:check  # solo comprueba (lo que usará el CI)
+npm run format:check  # solo comprueba; podrá ejecutarse en CI cuando esté configurado
 ```
 
-> El hook se puede saltar con `--no-verify`, pero **no lo hagas**: el CI rechazará el PR si el formato no es correcto.
+> El hook se puede saltar con `--no-verify`, pero **no lo hagas**. El hook aplica el formato localmente; el pipeline de CI todavía está pendiente de configuración.
+
+## API y desarrollo local
+
+La aplicación sigue el flujo `ruta → controlador → servicio → algoritmo`.
+`src/app.js` configura Express, rutas y errores; `src/server.js` inicia el
+servidor. Los controladores traducen HTTP, el servicio valida y mide la
+ejecución, y los algoritmos se mantienen independientes de la API.
+
+Arranca el servicio con:
+
+```bash
+npm start
+```
+
+Por defecto escucha en `http://localhost:3000`; se puede cambiar con la variable
+de entorno `PORT`. Para desarrollo con reinicio automático:
+
+```bash
+npm run dev
+```
+
+Endpoints iniciales:
+
+| Método | Endpoint             | Descripción                                    |
+| ------ | -------------------- | ---------------------------------------------- |
+| `GET`  | `/health`            | Estado del servicio                            |
+| `GET`  | `/api/v1/algorithms` | Algoritmos implementados                       |
+| `POST` | `/api/v1/benchmark`  | Ejecuta cinco mediciones y devuelve la mediana |
+
+Ejemplo:
+
+```bash
+curl -X POST http://localhost:3000/api/v1/benchmark \
+  -H "Content-Type: application/json" \
+  -d '{"algorithm":"mergesort","size":10000}'
+```
+
+El tamaño debe ser un entero entre 1 y 1 000 000. Cada medición genera un
+array aleatorio nuevo de enteros de 32 bits y cronometra la generación y la
+ordenación. Este protocolo inicial replica el ejemplo Java y debe confirmarse
+con los demás equipos antes de usarlo como contrato definitivo.
+
+Ejecuta las pruebas con:
+
+```bash
+npm test
+```
+
+### Probar desde VS Code
+
+Con el servidor iniciado mediante `npm start`, abre [`api.http`](api.http) y
+pulsa **Send Request** encima de una petición. La extensión REST Client muestra
+la respuesta en una pestaña de VS Code; no hace falta instalar ninguna
+dependencia npm adicional.
 
 ## Flujo de trabajo
 
@@ -124,9 +181,22 @@ Los cambios realizados con ayuda de IA deben documentarse según las normas de t
 JSBench/
 ├── .githooks/        # hooks de Git versionados
 │   └── pre-commit
+├── api.http          # peticiones de ejemplo para REST Client
 ├── .vscode/          # configuración compartida del editor
 │   ├── settings.json
 │   └── extensions.json
+├── src/
+│   ├── algorithms/
+│   ├── controllers/
+│   ├── errors/
+│   ├── routes/
+│   ├── services/
+│   ├── app.js
+│   └── server.js
+├── test/
+│   ├── algorithms/
+│   ├── services/
+│   └── api.test.js
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
