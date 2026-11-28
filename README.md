@@ -139,13 +139,13 @@ La imagen Docker se construye a partir del `Dockerfile` de la raíz y se publica
 
 Se generan automáticamente las siguientes etiquetas:
 
-| Etiqueta | Descripción |
-| -------- | ----------- |
-| `latest` | Última imagen publicada desde `main` |
+| Etiqueta       | Descripción                                   |
+| -------------- | --------------------------------------------- |
+| `latest`       | Última imagen publicada desde `main`          |
 | `sha-<commit>` | Identificador del commit asociado a la imagen |
-| `X.Y.Z` | Versión completa |
-| `X.Y` | Versión mayor y menor |
-| `X` | Versión mayor |
+| `X.Y.Z`        | Versión completa                              |
+| `X.Y`          | Versión mayor y menor                         |
+| `X`            | Versión mayor                                 |
 
 ### Publicar una nueva versión
 
