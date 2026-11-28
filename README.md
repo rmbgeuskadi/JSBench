@@ -13,7 +13,7 @@ Forma parte de la aplicación común: un frontend que compara el rendimiento de 
 - [x] Repositorio y configuración base
 - [x] API REST inicial con MergeSort
 - [x] Tests unitarios e integración iniciales
-- [ ] Docker
+- [x] Docker
 - [ ] Pipeline CI/CD
 
 ## Requisitos
@@ -70,6 +70,39 @@ VS Code te sugerirá instalar las extensiones recomendadas (EditorConfig,
 Prettier, GitHub Pull Requests y REST Client). **Instálalas.** Prettier permite
 formatear el código al guardar y REST Client permite probar la API desde el
 editor.
+
+## Uso con Docker
+
+La imagen se construye a partir del `Dockerfile` de la raíz (Node 24, solo dependencias de producción, usuario sin privilegios y healthcheck sobre `/health`).
+
+### Construir la imagen
+
+```bash
+docker build -t jsbench:0.1 .
+```
+
+### Ejecutar el contenedor
+
+```bash
+docker run --rm --name jsbench -p 3000:3000 jsbench:0.1
+```
+
+La API queda disponible en `http://localhost:3000`. El puerto se puede cambiar con la variable `PORT`.
+
+`docker ps` debe mostrar el contenedor como `(healthy)`.
+
+### Comprobar que funciona
+
+```bash
+curl http://localhost:3000/health
+# {"status":"UP"}
+
+curl -X POST http://localhost:3000/api/v1/benchmark \
+  -H "Content-Type: application/json" \
+  -d '{"algorithm":"mergesort","size":10000}'
+```
+
+Para detener el contenedor: `docker stop jsbench`.
 
 ## Formato del código
 
@@ -199,11 +232,13 @@ JSBench/
 │   ├── algorithms/
 │   ├── services/
 │   └── api.test.js
+├── .dockerignore
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
 ├── .prettierrc
 ├── .prettierignore
+├── Dockerfile
 ├── package.json
 ├── package-lock.json
 └── README.md
