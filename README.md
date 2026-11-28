@@ -14,7 +14,7 @@ Forma parte de la aplicación común: un frontend que compara el rendimiento de 
 - [x] API REST inicial con MergeSort
 - [x] Tests unitarios e integración iniciales
 - [x] Docker
-- [ ] Pipeline CI/CD
+- [x] Pipeline CI/CD
 
 ## Requisitos
 
@@ -119,6 +119,57 @@ npm run format:check  # solo comprueba; podrá ejecutarse en CI cuando esté con
 ```
 
 > El hook se puede saltar con `--no-verify`, pero **no lo hagas**. El hook aplica el formato localmente; el pipeline de CI todavía está pendiente de configuración.
+
+## CI/CD
+
+Utilizamos **GitHub Actions** para automatizar la integración continua (CI) y la publicación de imágenes Docker (CD).
+
+Los workflows se encuentran en `.github/workflows/`:
+
+- `ci.yml`: integración continua del proyecto.
+- `release.yml`: construcción y publicación de la imagen Docker en
+  GitHub Container Registry (GHCR).
+
+### Publicación de imágenes Docker
+
+El workflow `release.yml` se ejecuta automáticamente cuando:
+
+- Se incorporan cambios a la rama `main`.
+- Se publica una etiqueta de versión con el formato `vX.Y.Z`.
+
+La imagen Docker se construye a partir del `Dockerfile` de la raíz y se publica en `ghcr.io/rmbgeuskadi/jsbench`.
+
+Se generan automáticamente las siguientes etiquetas:
+
+| Etiqueta | Descripción |
+| -------- | ----------- |
+| `latest` | Última imagen publicada desde `main` |
+| `sha-<commit>` | Identificador del commit asociado a la imagen |
+| `X.Y.Z` | Versión completa |
+| `X.Y` | Versión mayor y menor |
+| `X` | Versión mayor |
+
+### Publicar una nueva versión
+
+Para publicar una versión siguiendo el versionado semántico:
+
+```bash
+git switch main
+git pull
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+GitHub Actions construirá y publicará automáticamente la imagen con las etiquetas correspondientes.
+
+### Ejecutar una imagen publicada
+
+```bash
+docker pull ghcr.io/rmbgeuskadi/jsbench:latest
+docker run --rm --name jsbench -p 3000:3000 ghcr.io/rmbgeuskadi/jsbench:latest
+```
+
+De esta forma, no es necesario construir la imagen Docker localmente.
 
 ## API y desarrollo local
 
