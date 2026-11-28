@@ -13,23 +13,25 @@ Forma parte de la aplicación común: un frontend que compara el rendimiento de 
 - [x] Repositorio y configuración base
 - [x] API REST inicial con MergeSort
 - [x] Tests unitarios e integración iniciales
+- [x] Pipeline de CI
 - [x] Docker
 - [x] Pipeline CI/CD
 
 ## Requisitos
 
-| Herramienta | Versión              |
-| ----------- | -------------------- |
-| Git         | 2.40 o superior      |
-| Node.js     | 24 LTS o superior    |
-| npm         | Incluido con Node.js |
-| VS Code     | Recomendado          |
+| Herramienta | Versión                       |
+| ----------- | ----------------------------- |
+| Git         | 2.40 o superior               |
+| Node.js     | 24 LTS o superior             |
+| npm         | Incluido con Node.js          |
+| VS Code     | Recomendado                   |
+| Docker      | Opcional, para usar la imagen |
 
 ## Puesta en marcha (primera vez)
 
 ### 1. Configura tu identidad de Git
 
-Tus commits deben estar identificados con **tu nombre** y el **correo electrónico** asociado a tu cuenta de GitHub:
+Tus commits deben llevar **tu nombre** y el correo de tu cuenta de GitHub:
 
 ```bash
 git config --global user.name "Nombre Apellido"
@@ -38,87 +40,83 @@ git config --global pull.ff only
 git config --global core.autocrlf false
 ```
 
-### 2. Clona el repositorio
+### 2. Clona el repositorio e instala las dependencias
 
 ```bash
 git clone https://github.com/rmbgeuskadi/JSBench.git
 cd JSBench
-```
-
-### 3. Instala las dependencias
-
-```bash
 npm install
 ```
 
-Este comando también **activa automáticamente los hooks de Git** (script `prepare`). Para comprobarlo:
+`npm install` activa los hooks de Git (script `prepare`). Compruébalo con `git config core.hooksPath`, que debe mostrar `.githooks`. Si no muestra nada, ejecuta `npm run prepare`.
 
-```bash
-git config core.hooksPath
-# debe mostrar: .githooks
-```
-
-Si no muestra nada, ejecuta `npm run prepare`.
-
-### 4. Abre el proyecto en VS Code
-
-```bash
-code .
-```
+### 3. Abre el proyecto en VS Code
 
 VS Code te sugerirá instalar las extensiones recomendadas (EditorConfig,
 Prettier, GitHub Pull Requests y REST Client). **Instálalas.** Prettier permite
 formatear el código al guardar y REST Client permite probar la API desde el
 editor.
 
-## Uso con Docker
+## Arquitectura
 
-La imagen se construye a partir del `Dockerfile` de la raíz (Node 24, solo dependencias de producción, usuario sin privilegios y healthcheck sobre `/health`).
+La aplicación sigue el flujo `ruta → controlador → servicio → algoritmo`.
+`src/app.js` configura Express, rutas y errores; `src/server.js` inicia el
+servidor. Los controladores traducen HTTP, el servicio valida y mide la
+ejecución, y los algoritmos se mantienen independientes de la API.
 
-### Construir la imagen
+## Ejecución en local
+
+Instala las dependencias y arranca el servicio:
 
 ```bash
-docker build -t jsbench:0.1 .
+npm install
+npm start
 ```
 
-### Ejecutar el contenedor
+Por defecto escucha en `http://localhost:3000`; se puede cambiar con la variable
+de entorno `PORT`. Para desarrollo con reinicio automático:
 
 ```bash
-docker run --rm --name jsbench -p 3000:3000 jsbench:0.1
+npm run dev
 ```
 
-La API queda disponible en `http://localhost:3000`. El puerto se puede cambiar con la variable `PORT`.
+Endpoints disponibles:
 
-`docker ps` debe mostrar el contenedor como `(healthy)`.
+| Método | Endpoint             | Descripción                                    |
+| ------ | -------------------- | ---------------------------------------------- |
+| `GET`  | `/health`            | Estado del servicio                            |
+| `GET`  | `/api/v1/algorithms` | Algoritmos implementados                       |
+| `POST` | `/api/v1/benchmark`  | Ejecuta cinco mediciones y devuelve la mediana |
 
-### Comprobar que funciona
+Ejemplo:
 
 ```bash
-curl http://localhost:3000/health
-# {"status":"UP"}
-
 curl -X POST http://localhost:3000/api/v1/benchmark \
   -H "Content-Type: application/json" \
   -d '{"algorithm":"mergesort","size":10000}'
 ```
 
-Para detener el contenedor: `docker stop jsbench`.
+El tamaño debe ser un entero entre 1 y 1 000 000. Cada medición genera un
+array aleatorio nuevo de enteros de 32 bits y cronometra la generación y la
+ordenación. Este protocolo inicial replica el del microservicio Java y debe
+confirmarse con los demás equipos antes de considerarse definitivo.
 
-## Formato del código
+### Probar desde VS Code
 
-Usamos **Prettier**. Hay dos niveles de protección:
+Con el servidor iniciado mediante `npm start`, abre [`api.http`](api.http) y
+pulsa **Send Request** encima de una petición. La extensión REST Client muestra
+la respuesta en una pestaña de VS Code; no hace falta instalar ninguna
+dependencia npm adicional.
 
-1. **Al guardar** en VS Code (`formatOnSave`).
-2. **Al hacer commit**: el hook `.githooks/pre-commit` formatea los archivos que van en el commit.
-
-Comandos manuales:
+## Tests
 
 ```bash
-npm run format        # formatea todo el proyecto
-npm run format:check  # solo comprueba; podrá ejecutarse en CI cuando esté configurado
+npm test
 ```
 
-> El hook se puede saltar con `--no-verify`, pero **no lo hagas**. El hook aplica el formato localmente; el pipeline de CI todavía está pendiente de configuración.
+## Docker
+
+La imagen se construye a partir del `Dockerfile` de la raíz (Node 24, solo dependencias de producción, usuario sin privilegios y healthcheck sobre `/health`).
 
 ## CI/CD
 
@@ -178,68 +176,54 @@ La aplicación sigue el flujo `ruta → controlador → servicio → algoritmo`.
 servidor. Los controladores traducen HTTP, el servicio valida y mide la
 ejecución, y los algoritmos se mantienen independientes de la API.
 
-Arranca el servicio con:
+### Construir la imagen
 
 ```bash
-npm start
+docker build -t jsbench:0.1 .
 ```
 
-Por defecto escucha en `http://localhost:3000`; se puede cambiar con la variable
-de entorno `PORT`. Para desarrollo con reinicio automático:
+### Ejecutar el contenedor
 
 ```bash
-npm run dev
+docker run --rm --name jsbench -p 3000:3000 jsbench:0.1
 ```
 
-Endpoints iniciales:
+La API queda disponible en `http://localhost:3000`. El puerto se puede cambiar con la variable `PORT`.
 
-| Método | Endpoint             | Descripción                                    |
-| ------ | -------------------- | ---------------------------------------------- |
-| `GET`  | `/health`            | Estado del servicio                            |
-| `GET`  | `/api/v1/algorithms` | Algoritmos implementados                       |
-| `POST` | `/api/v1/benchmark`  | Ejecuta cinco mediciones y devuelve la mediana |
+`docker ps` debe mostrar el contenedor como `(healthy)`.
 
-Ejemplo:
+### Comprobar que funciona
 
 ```bash
+curl http://localhost:3000/health
+# {"status":"UP"}
+
 curl -X POST http://localhost:3000/api/v1/benchmark \
   -H "Content-Type: application/json" \
   -d '{"algorithm":"mergesort","size":10000}'
 ```
 
-El tamaño debe ser un entero entre 1 y 1 000 000. Cada medición genera un
-array aleatorio nuevo de enteros de 32 bits y cronometra la generación y la
-ordenación. Este protocolo inicial replica el ejemplo Java y debe confirmarse
-con los demás equipos antes de usarlo como contrato definitivo.
+> En PowerShell usa `curl.exe` o `Invoke-RestMethod` en lugar de `curl`, y escapa las comillas del JSON.
 
-Ejecuta las pruebas con:
+Para detener el contenedor: `docker stop jsbench`.
 
-```bash
-npm test
-```
+## Formato del código
 
-### Probar desde VS Code
+Usamos **Prettier**. Hay dos niveles de protección:
 
-Con el servidor iniciado mediante `npm start`, abre [`api.http`](api.http) y
-pulsa **Send Request** encima de una petición. La extensión REST Client muestra
-la respuesta en una pestaña de VS Code; no hace falta instalar ninguna
-dependencia npm adicional.
+1. **Al guardar** en VS Code (`formatOnSave`).
+2. **Al hacer commit**: el hook `.githooks/pre-commit` formatea los archivos que van en el commit.
 
-## Flujo de trabajo
-
-- **No se hace push directo a `main`.** Todo cambio entra por Pull Request.
-- Cada PR necesita al menos **1 aprobación** de un miembro del equipo y el **CI en verde**.
+Comandos manuales:
 
 ```bash
-git switch main
-git pull
-git switch -c feat/descripcion-corta
-# ... cambios ...
-git add .
-git commit -m "feat(api): descripción en imperativo"
-git push -u origin feat/descripcion-corta
-# Abre el PR en GitHub o desde VS Code (extensión GitHub Pull Requests)
+npm run format        # formatea todo el proyecto
+npm run format:check  # solo comprueba; es lo que verifica el CI
 ```
+
+## Contribuir
+
+¿Quieres colaborar? Consulta la [guía de contribución](CONTRIBUTING.md): configuración del entorno, flujo de trabajo, convenciones y revisión de PRs.
 
 ### Convención de commits
 
@@ -265,10 +249,15 @@ Los cambios realizados con ayuda de IA deben documentarse según las normas de t
 
 ```text
 JSBench/
-├── .githooks/        # hooks de Git versionados
+├── .github/
+│   ├── ISSUE_TEMPLATE/   # plantillas de issues (bug, enhancement)
+│   ├── workflows/        # pipelines de GitHub Actions
+│   │   └── ci.yml
+│   ├── CODEOWNERS
+│   └── PULL_REQUEST_TEMPLATE.md
+├── .githooks/            # hooks de Git versionados
 │   └── pre-commit
-├── api.http          # peticiones de ejemplo para REST Client
-├── .vscode/          # configuración compartida del editor
+├── .vscode/              # configuración compartida del editor
 │   ├── settings.json
 │   └── extensions.json
 ├── src/
@@ -289,6 +278,8 @@ JSBench/
 ├── .gitignore
 ├── .prettierrc
 ├── .prettierignore
+├── api.http              # peticiones de ejemplo para REST Client
+├── CONTRIBUTING.md
 ├── Dockerfile
 ├── package.json
 ├── package-lock.json
