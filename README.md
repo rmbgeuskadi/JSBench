@@ -1,5 +1,7 @@
 # JSBench
 
+[![CI](https://github.com/rmbgeuskadi/JSBench/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rmbgeuskadi/JSBench/actions/workflows/ci.yml)
+
 Microservicio en **JavaScript (Node.js)** del proyecto global de _Prácticas Continuas_. Expone una API REST que ejecuta algoritmos clásicos con un tamaño de entrada dado y devuelve su tiempo de ejecución (mediana de 5 mediciones).
 
 Forma parte de la aplicación común: un frontend que compara el rendimiento de los mismos algoritmos en distintos lenguajes, con un microservicio por lenguaje.
