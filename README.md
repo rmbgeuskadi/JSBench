@@ -14,7 +14,7 @@ Forma parte de la aplicación común: un frontend que compara el rendimiento de 
 - [x] API REST inicial con MergeSort
 - [x] Tests unitarios e integración iniciales
 - [x] Pipeline de CI
-- [ ] Docker
+- [x] Docker
 - [ ] Pipeline de CD
 
 ## Contrato de la API (v1)
@@ -28,7 +28,9 @@ Basado en el ejemplo de la guía del proyecto (apartado 3.4). Se ajustará si lo
 | Campo       | Tipo    | Descripción                                                                                 |
 | ----------- | ------- | ------------------------------------------------------------------------------------------- |
 | `algorithm` | string  | `mergesort` \| `quicksort` \| `insertionsort` \| `selectionsort` \| `fibonacci` \| `matmul` |
-| `size`      | integer | Tamaño de la entrada (> 0)                                                                  |
+| `size`      | integer | Tamaño de la entrada (entero entre 1 y 1 000 000)                                           |
+
+Por ahora solo está implementado `mergesort`.
 
 ```json
 { "algorithm": "mergesort", "size": 10000 }
@@ -54,12 +56,13 @@ Basado en el ejemplo de la guía del proyecto (apartado 3.4). Se ajustará si lo
 }
 ```
 
-**Errores**: cuerpo `{ "error": string }`
+**Errores**: cuerpo `{ "error": { "code": string, "message": string } }`
 
-| Código | Cuándo                            |
-| ------ | --------------------------------- |
-| 400    | Petición no válida                |
-| 501    | Algoritmo no implementado todavía |
+| Código | Cuándo                                                   |
+| ------ | -------------------------------------------------------- |
+| 400    | `algorithm` ausente, `size` no válido o JSON mal formado |
+| 404    | Algoritmo no implementado todavía                        |
+| 413    | Cuerpo de la petición demasiado grande                   |
 
 ### `GET /api/v1/algorithms`
 
@@ -73,9 +76,41 @@ Devuelve los algoritmos implementados en este microservicio.
 
 | Herramienta | Versión                       |
 | ----------- | ----------------------------- |
+| Git         | 2.40 o superior               |
 | Node.js     | 24 LTS o superior             |
 | npm         | Incluido con Node.js          |
+| VS Code     | Recomendado                   |
 | Docker      | Opcional, para usar la imagen |
+
+## Puesta en marcha (primera vez)
+
+### 1. Configura tu identidad de Git
+
+Tus commits deben llevar **tu nombre** y el correo de tu cuenta de GitHub:
+
+```bash
+git config --global user.name "Nombre Apellido"
+git config --global user.email "tu@email.com"
+git config --global pull.ff only
+git config --global core.autocrlf false
+```
+
+### 2. Clona el repositorio e instala las dependencias
+
+```bash
+git clone https://github.com/rmbgeuskadi/JSBench.git
+cd JSBench
+npm install
+```
+
+`npm install` activa los hooks de Git (script `prepare`). Compruébalo con `git config core.hooksPath`, que debe mostrar `.githooks`. Si no muestra nada, ejecuta `npm run prepare`.
+
+### 3. Abre el proyecto en VS Code
+
+VS Code te sugerirá instalar las extensiones recomendadas (EditorConfig,
+Prettier, GitHub Pull Requests y REST Client). **Instálalas.** Prettier permite
+formatear el código al guardar y REST Client permite probar la API desde el
+editor.
 
 ## Arquitectura
 
@@ -134,10 +169,116 @@ dependencia npm adicional.
 npm test
 ```
 
-## Docker y despliegue
+## Docker
 
-> Pendiente: se completará cuando estén el `Dockerfile` y el pipeline de CD.
+La imagen se construye a partir del `Dockerfile` de la raíz (Node 24, solo dependencias de producción, usuario sin privilegios y healthcheck sobre `/health`).
+
+### Construir la imagen
+
+```bash
+docker build -t jsbench:0.1 .
+```
+
+### Ejecutar el contenedor
+
+```bash
+docker run --rm --name jsbench -p 3000:3000 jsbench:0.1
+```
+
+La API queda disponible en `http://localhost:3000`. El puerto se puede cambiar con la variable `PORT`.
+
+`docker ps` debe mostrar el contenedor como `(healthy)`.
+
+### Comprobar que funciona
+
+```bash
+curl http://localhost:3000/health
+# {"status":"UP"}
+
+curl -X POST http://localhost:3000/api/v1/benchmark \
+  -H "Content-Type: application/json" \
+  -d '{"algorithm":"mergesort","size":10000}'
+```
+
+> En PowerShell usa `curl.exe` o `Invoke-RestMethod` en lugar de `curl`, y escapa las comillas del JSON.
+
+Para detener el contenedor: `docker stop jsbench`.
+
+## Formato del código
+
+Usamos **Prettier**. Hay dos niveles de protección:
+
+1. **Al guardar** en VS Code (`formatOnSave`).
+2. **Al hacer commit**: el hook `.githooks/pre-commit` formatea los archivos que van en el commit.
+
+Comandos manuales:
+
+```bash
+npm run format        # formatea todo el proyecto
+npm run format:check  # solo comprueba; es lo que verifica el CI
+```
 
 ## Contribuir
 
 ¿Quieres colaborar? Consulta la [guía de contribución](CONTRIBUTING.md): configuración del entorno, flujo de trabajo, convenciones y revisión de PRs.
+
+### Convención de commits
+
+Usamos [Conventional Commits](https://www.conventionalcommits.org/es/): `tipo(ámbito): descripción`
+
+| Tipo       | Uso                                         |
+| ---------- | ------------------------------------------- |
+| `feat`     | Funcionalidad nueva                         |
+| `fix`      | Corrección de un error                      |
+| `test`     | Tests                                       |
+| `docs`     | Documentación                               |
+| `refactor` | Reestructuración sin cambiar comportamiento |
+| `chore`    | Mantenimiento, configuración, dependencias  |
+| `ci`       | Pipelines                                   |
+
+### Uso de IA
+
+Está permitido utilizar herramientas de IA como apoyo al desarrollo, pero todo contenido generado debe ser **revisado**, **comprendido** y **validado por una persona**.
+
+Los cambios realizados con ayuda de IA deben documentarse según las normas de trabajo acordadas por el equipo. Los commits deben ser realizados siempre por una persona.
+
+## Estructura
+
+```text
+JSBench/
+├── .github/
+│   ├── ISSUE_TEMPLATE/   # plantillas de issues (bug, enhancement)
+│   ├── workflows/        # pipelines de GitHub Actions
+│   │   └── ci.yml
+│   ├── CODEOWNERS
+│   └── PULL_REQUEST_TEMPLATE.md
+├── .githooks/            # hooks de Git versionados
+│   └── pre-commit
+├── .vscode/              # configuración compartida del editor
+│   ├── settings.json
+│   └── extensions.json
+├── src/
+│   ├── algorithms/
+│   ├── controllers/
+│   ├── errors/
+│   ├── routes/
+│   ├── services/
+│   ├── app.js
+│   └── server.js
+├── test/
+│   ├── algorithms/
+│   ├── services/
+│   └── api.test.js
+├── .dockerignore
+├── .editorconfig
+├── .gitattributes
+├── .gitignore
+├── .prettierrc
+├── .prettierignore
+├── api.http              # peticiones de ejemplo para REST Client
+├── CONTRIBUTING.md
+├── Dockerfile
+├── package.json
+├── package-lock.json
+└── README.md
+```
